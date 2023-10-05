@@ -75,11 +75,13 @@ func NewClaimTxManager(cfg Config, chExitRootEvent chan *etherman.GlobalExitRoot
 // send then to the blockchain and keep monitoring them until they
 // get mined
 func (tm *ClaimTxManager) Start() {
+	log.Infof("----------------------------- Started ClaimTxManager. Reading Events");
 	for {
 		select {
 		case <-tm.ctx.Done():
 			return
 		case ger := <-tm.chExitRootEvent:
+			log.Infof("----------------------------- ExitRootEventDetected");
 			go func() {
 				err := tm.updateDepositsStatus(ger)
 				if err != nil {
@@ -87,6 +89,7 @@ func (tm *ClaimTxManager) Start() {
 				}
 			}()
 		case <-time.After(tm.cfg.FrequencyToMonitorTxs.Duration):
+			log.Infof("----------------------------- Started ClaimTxManager. Reading Events");
 			err := tm.monitorTxs(context.Background())
 			if err != nil {
 				log.Errorf("failed to monitor txs: %v", err)
@@ -122,7 +125,7 @@ func (tm *ClaimTxManager) updateDepositsStatus(ger *etherman.GlobalExitRoot) err
 	return nil
 }
 
-func (tm *ClaimTxManager) processDepositStatus(ger *etherman.GlobalExitRoot, dbTx pgx.Tx) error {
+func (tm *ClaimTxManager) processDepositStatus(ger *etherman.GlobalExitRoot, dbTx pgx.Tx) error { //
 	if ger.BlockID != 0 { // L2 exit root is updated
 		log.Infof("Rollup exitroot %v is updated", ger.ExitRoots[1])
 		if err := tm.storage.UpdateL2DepositsStatus(tm.ctx, ger.ExitRoots[1][:], tm.l2NetworkID, dbTx); err != nil {
@@ -167,7 +170,7 @@ func (tm *ClaimTxManager) processDepositStatus(ger *etherman.GlobalExitRoot, dbT
 				log.Errorf("error BuildSendClaim tx for deposit %d. Error: %v", deposit.DepositCount, err)
 				return err
 			}
-			if err = tm.addClaimTx(deposit.DepositCount, deposit.BlockID, tm.auth.From, tx.To(), nil, tx.Data(), dbTx); err != nil {
+			if err = tm.addClaimTx(deposit.DepositCount, deposit.BlockID, tm.auth.From, tx.To(), nil, tx.Data(), dbTx); err != nil { //
 				log.Errorf("error adding claim tx for deposit %d. Error: %v", deposit.DepositCount, err)
 				return err
 			}
@@ -190,7 +193,8 @@ func (tm *ClaimTxManager) getNextNonce(from common.Address) (uint64, error) {
 	return nonce, nil
 }
 
-func (tm *ClaimTxManager) addClaimTx(depositCount uint, blockID uint64, from common.Address, to *common.Address, value *big.Int, data []byte, dbTx pgx.Tx) error {
+// Creates claim when deposit is done
+func (tm *ClaimTxManager) addClaimTx(depositCount uint, blockID uint64, from common.Address, to *common.Address, value *big.Int, data []byte, dbTx pgx.Tx) error { //
 	// get gas
 	tx := ethereum.CallMsg{
 		From:  from,
@@ -235,7 +239,7 @@ func (tm *ClaimTxManager) addClaimTx(depositCount uint, blockID uint64, from com
 }
 
 // monitorTxs process all pending monitored tx
-func (tm *ClaimTxManager) monitorTxs(ctx context.Context) error {
+func (tm *ClaimTxManager) monitorTxs(ctx context.Context) error { //
 	dbTx, err := tm.storage.BeginDBTransaction(tm.ctx)
 	if err != nil {
 		return err
@@ -268,6 +272,7 @@ func (tm *ClaimTxManager) monitorTxs(ctx context.Context) error {
 				mTxLog.Errorf("failed to check if tx %s was mined: %v", txHash.String(), err)
 				continue
 			}
+			logger.Debugf("---------------------- Txn: %s Mined status: %b", txHash, mined);
 
 			// if the tx is not mined yet, check that not all the tx were mined and go to the next
 			if !mined {
@@ -282,6 +287,7 @@ func (tm *ClaimTxManager) monitorTxs(ctx context.Context) error {
 					continue
 				}
 
+				logger.Debugf("---------------------- Txn: %s found in pending pool", txHash);
 				allHistoryTxMined = false
 				continue
 			}
@@ -322,6 +328,7 @@ func (tm *ClaimTxManager) monitorTxs(ctx context.Context) error {
 		}
 
 		if receiptSuccessful {
+			logger.Debugf("---------------------- Txn: %s was not successful", txHash);
 			continue
 		}
 
@@ -329,6 +336,7 @@ func (tm *ClaimTxManager) monitorTxs(ctx context.Context) error {
 		// this Tx and we are not able to identify automatically, so we mark this as failed to let the
 		// caller know something is not right and needs to be review and to avoid to monitor this
 		// tx infinitely
+		logger.Debugf("---------------------- Txn: %s was found unsuccessfull", txHash);
 		if allHistoryTxMined && len(mTx.History) >= maxHistorySize {
 			mTx.Status = ctmtypes.MonitoredTxStatusFailed
 			mTxLog.Infof("marked as failed because reached the history size limit (%d)", maxHistorySize)

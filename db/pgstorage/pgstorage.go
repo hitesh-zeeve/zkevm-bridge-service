@@ -334,6 +334,7 @@ func (p *PostgresStorage) GetRoot(ctx context.Context, depositCnt uint, network 
 // SetRoot store the root with deposit count to the storage.
 func (p *PostgresStorage) SetRoot(ctx context.Context, root []byte, depositID uint64, depositCnt uint, network uint, dbTx pgx.Tx) error {
 	const setRootSQL = "INSERT INTO mt.root (root, deposit_id, deposit_cnt, network) VALUES ($1, $2, $3, $4);"
+	log.Infof("------------------------------------ Enter data in DB - mt.root table(root, deposit_id: %d, deposit_cnt: %d, network: %d)", depositID, depositCnt, network);
 	_, err := p.getExecQuerier(dbTx).Exec(ctx, setRootSQL, root, depositID, depositCnt, network)
 	return err
 }
@@ -455,7 +456,7 @@ func (p *PostgresStorage) UpdateBlocksForTesting(ctx context.Context, networkID 
 }
 
 // UpdateL1DepositsStatus updates the ready_for_claim status of L1 deposits.
-func (p *PostgresStorage) UpdateL1DepositsStatus(ctx context.Context, exitRoot []byte, dbTx pgx.Tx) ([]*etherman.Deposit, error) {
+func (p *PostgresStorage) UpdateL1DepositsStatus(ctx context.Context, exitRoot []byte, dbTx pgx.Tx) ([]*etherman.Deposit, error) { //
 	const updateDepositsStatusSQL = `UPDATE sync.deposit SET ready_for_claim = true 
 		WHERE deposit_cnt <=
 			(SELECT deposit_cnt FROM mt.root WHERE root = $1 AND network = 0) 
@@ -494,6 +495,7 @@ func (p *PostgresStorage) UpdateL2DepositsStatus(ctx context.Context, exitRoot [
 
 // AddClaimTx adds a claim monitored transaction to the storage.
 func (p *PostgresStorage) AddClaimTx(ctx context.Context, mTx ctmtypes.MonitoredTx, dbTx pgx.Tx) error {
+	log.Infof("--------------------------------------- Enter data in DB - new claim in DB");
 	const addMonitoredTxSQL = `INSERT INTO sync.monitored_txs 
 		(id, block_id, from_addr, to_addr, nonce, value, data, gas, status, history, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
@@ -502,7 +504,7 @@ func (p *PostgresStorage) AddClaimTx(ctx context.Context, mTx ctmtypes.Monitored
 }
 
 // UpdateClaimTx updates a claim monitored transaction in the storage.
-func (p *PostgresStorage) UpdateClaimTx(ctx context.Context, mTx ctmtypes.MonitoredTx, dbTx pgx.Tx) error {
+func (p *PostgresStorage) UpdateClaimTx(ctx context.Context, mTx ctmtypes.MonitoredTx, dbTx pgx.Tx) error { //
 	const updateMonitoredTxSQL = `UPDATE sync.monitored_txs 
 		SET block_id = $2
 		, from_addr = $3
@@ -520,7 +522,7 @@ func (p *PostgresStorage) UpdateClaimTx(ctx context.Context, mTx ctmtypes.Monito
 }
 
 // GetClaimTxsByStatus gets the monitored transactions by status.
-func (p *PostgresStorage) GetClaimTxsByStatus(ctx context.Context, statuses []ctmtypes.MonitoredTxStatus, dbTx pgx.Tx) ([]ctmtypes.MonitoredTx, error) {
+func (p *PostgresStorage) GetClaimTxsByStatus(ctx context.Context, statuses []ctmtypes.MonitoredTxStatus, dbTx pgx.Tx) ([]ctmtypes.MonitoredTx, error) { //
 	const getMonitoredTxsSQL = "SELECT * FROM sync.monitored_txs WHERE status = ANY($1) ORDER BY created_at ASC"
 	rows, err := p.getExecQuerier(dbTx).Query(ctx, getMonitoredTxsSQL, pq.Array(statuses))
 	if errors.Is(err, pgx.ErrNoRows) {

@@ -184,6 +184,7 @@ func (etherMan *Client) updateGlobalExitRootEvent(ctx context.Context, vLog type
 	if err != nil {
 		return err
 	}
+	log.Debugf("--------------------GlobalExitRoot Event Parsed, BlockNumber: %d", vLog.BlockNumber);
 	fullBlock, err := etherMan.EtherClient.BlockByHash(ctx, vLog.BlockHash)
 	if err != nil {
 		return fmt.Errorf("error getting hashParent. BlockNumber: %d. Error: %w", vLog.BlockNumber, err)
@@ -214,12 +215,13 @@ func (etherMan *Client) updateGlobalExitRootEvent(ctx context.Context, vLog type
 	return nil
 }
 
-func (etherMan *Client) depositEvent(ctx context.Context, vLog types.Log, blocks *[]Block, blocksOrder *map[common.Hash][]Order) error {
+func (etherMan *Client) depositEvent(ctx context.Context, vLog types.Log, blocks *[]Block, blocksOrder *map[common.Hash][]Order) error { //
 	log.Debug("Deposit event detected")
 	d, err := etherMan.PolygonBridge.ParseBridgeEvent(vLog)
 	if err != nil {
 		return err
 	}
+	log.Debugf("--------------------Bridge Event Parsed, depositCount: %d", d.DepositCount);
 	var deposit Deposit
 	deposit.Amount = d.Amount
 	deposit.BlockNumber = vLog.BlockNumber
@@ -260,6 +262,7 @@ func (etherMan *Client) claimEvent(ctx context.Context, vLog types.Log, blocks *
 	if err != nil {
 		return err
 	}
+	log.Debugf("--------------------Claim Event Parsed, network: %d", c.OriginNetwork);
 	var claim Claim
 	claim.Amount = c.Amount
 	claim.DestinationAddress = c.DestinationAddress
