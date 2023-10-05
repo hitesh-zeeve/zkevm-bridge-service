@@ -343,7 +343,8 @@ func (tm *ClaimTxManager) monitorTxs(ctx context.Context) error { //
 		// this Tx and we are not able to identify automatically, so we mark this as failed to let the
 		// caller know something is not right and needs to be review and to avoid to monitor this
 		// tx infinitely
-		log.Debugf("---------------------- Txn: was found unsuccessfull");
+		log.Debugf("---------------------- Txn: allHistoryTxMined: %b", allHistoryTxMined);
+		log.Debugf("---------------------- Txn: history length: %d, historySize: %d", len(mTx.History), maxHistorySize);
 		if allHistoryTxMined && len(mTx.History) >= maxHistorySize {
 			mTx.Status = ctmtypes.MonitoredTxStatusFailed
 			mTxLog.Infof("marked as failed because reached the history size limit (%d)", maxHistorySize)
