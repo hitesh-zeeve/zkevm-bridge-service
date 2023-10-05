@@ -275,7 +275,8 @@ func (tm *ClaimTxManager) monitorTxs(ctx context.Context) error { //
 				mTxLog.Errorf("failed to check if tx %s was mined: %v", txHash.String(), err)
 				continue
 			}
-			logger.Debugf("---------------------- Txn: %s Mined status: %b", txHash, mined);
+			log.Debugf("---------------------- Txn: %s Mined status: %b", txHash, mined);
+			mTxLog.Debugf("---------------------- Txn: %s Mined status: %b", txHash, mined);
 
 			// if the tx is not mined yet, check that not all the tx were mined and go to the next
 			if !mined {
@@ -290,11 +291,13 @@ func (tm *ClaimTxManager) monitorTxs(ctx context.Context) error { //
 					continue
 				}
 
-				logger.Debugf("---------------------- Txn: %s found in pending pool", txHash);
+				log.Debugf("---------------------- Txn: %s found in pending pool", txHash);
+				mTxLog.Debugf("---------------------- Txn: %s found in pending pool", txHash);
 				allHistoryTxMined = false
 				continue
 			}
 
+			log.Debugf("---------------------- Txn: %s, status: %s", txHash, receipt.Status);
 			// if the tx was mined successfully we can break the loop and proceed
 			if receipt.Status == types.ReceiptStatusSuccessful {
 				mTxLog.Infof("tx %s was mined successfully", txHash.String())
@@ -331,7 +334,8 @@ func (tm *ClaimTxManager) monitorTxs(ctx context.Context) error { //
 		}
 
 		if receiptSuccessful {
-			logger.Debugf("---------------------- Txn: %s was not successful", txHash);
+			log.Debugf("---------------------- Txn: was not successful");
+			log.Debug("---------------------- Txn: was not successful");
 			continue
 		}
 
@@ -339,7 +343,7 @@ func (tm *ClaimTxManager) monitorTxs(ctx context.Context) error { //
 		// this Tx and we are not able to identify automatically, so we mark this as failed to let the
 		// caller know something is not right and needs to be review and to avoid to monitor this
 		// tx infinitely
-		logger.Debugf("---------------------- Txn: %s was found unsuccessfull", txHash);
+		log.Debugf("---------------------- Txn: was found unsuccessfull");
 		if allHistoryTxMined && len(mTx.History) >= maxHistorySize {
 			mTx.Status = ctmtypes.MonitoredTxStatusFailed
 			mTxLog.Infof("marked as failed because reached the history size limit (%d)", maxHistorySize)
