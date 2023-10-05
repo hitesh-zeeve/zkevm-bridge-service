@@ -83,7 +83,7 @@ func (tm *ClaimTxManager) Start() {
 			return
 		case ger := <-tm.chExitRootEvent:
 			log.Infof("----------------------------- ExitRootEventDetected");
-			log.Info("----------------------------- Started ClaimTxManager. Reading Events");
+			log.Info("----------------------------- ExitRootEventDetected");
 			go func() {
 				err := tm.updateDepositsStatus(ger)
 				if err != nil {
@@ -91,8 +91,8 @@ func (tm *ClaimTxManager) Start() {
 				}
 			}()
 		case <-time.After(tm.cfg.FrequencyToMonitorTxs.Duration):
-			log.Infof("----------------------------- Started ClaimTxManager. Reading Events");
-			log.Info("----------------------------- Started ClaimTxManager. Reading Events");
+			log.Infof("----------------------------- FrequencyToMonitorTxs");
+			log.Info("----------------------------- FrequencyToMonitorTxs");
 			err := tm.monitorTxs(context.Background())
 			if err != nil {
 				log.Errorf("failed to monitor txs: %v", err)
