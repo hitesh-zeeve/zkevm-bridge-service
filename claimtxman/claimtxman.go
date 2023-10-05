@@ -76,12 +76,14 @@ func NewClaimTxManager(cfg Config, chExitRootEvent chan *etherman.GlobalExitRoot
 // get mined
 func (tm *ClaimTxManager) Start() {
 	log.Infof("----------------------------- Started ClaimTxManager. Reading Events");
+	log.Info("----------------------------- Started ClaimTxManager. Reading Events");
 	for {
 		select {
 		case <-tm.ctx.Done():
 			return
 		case ger := <-tm.chExitRootEvent:
 			log.Infof("----------------------------- ExitRootEventDetected");
+			log.Info("----------------------------- Started ClaimTxManager. Reading Events");
 			go func() {
 				err := tm.updateDepositsStatus(ger)
 				if err != nil {
@@ -90,6 +92,7 @@ func (tm *ClaimTxManager) Start() {
 			}()
 		case <-time.After(tm.cfg.FrequencyToMonitorTxs.Duration):
 			log.Infof("----------------------------- Started ClaimTxManager. Reading Events");
+			log.Info("----------------------------- Started ClaimTxManager. Reading Events");
 			err := tm.monitorTxs(context.Background())
 			if err != nil {
 				log.Errorf("failed to monitor txs: %v", err)
